@@ -58,7 +58,7 @@ import {
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  priority: z.enum(["none", "low", "medium", "high"]).optional(),
+  priority: z.enum(["low", "medium", "high"]).optional(),
   due_date: z.date().nullable(),
 });
 
@@ -153,6 +153,8 @@ export function TodoDialog({
       if (error) throw error;
 
       form.reset();
+      form.setValue('priority', undefined);
+      
       await fetchTodos();
       onTodosChange();
     } catch (error) {
@@ -248,12 +250,13 @@ export function TodoDialog({
                   <FormField
                     control={form.control}
                     name="priority"
-                    render={({ field }) => (
+                    render={({ field: { onChange, value, ...field } }) => (
                       <FormItem>
                         <FormLabel>Priority (Optional)</FormLabel>
                         <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
+                          onValueChange={onChange}
+                          value={value || ""}
+                          {...field}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -261,7 +264,6 @@ export function TodoDialog({
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="none">None</SelectItem>
                             <SelectItem value="low">Low</SelectItem>
                             <SelectItem value="medium">Medium</SelectItem>
                             <SelectItem value="high">High</SelectItem>
