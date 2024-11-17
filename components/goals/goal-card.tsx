@@ -18,6 +18,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 import { EditGoalDialog } from "./edit-goal-dialog";
 import { DeleteGoalDialog } from "./delete-goal-dialog";
+import { supabase } from "@/lib/supabase";
 
 interface GoalCardProps {
   goal: Goal;
@@ -37,6 +38,33 @@ export function GoalCard({ goal, onGoalChange }: GoalCardProps) {
 
   const isOverdue = daysRemaining < 0;
 
+  const toggleComplete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const { error } = await supabase
+        .from('goals')
+        .update({ is_completed: !goal.is_completed })
+        .eq('id', goal.id);
+
+      if (error) throw error;
+
+      toast({
+        title: goal.is_completed ? "Goal marked as active" : "Goal marked as complete",
+        description: goal.is_completed ? 
+          "The goal has been moved to active goals" : 
+          "The goal has been moved to completed goals",
+      });
+
+      onGoalChange();
+    } catch (error: any) {
+      toast({
+        title: "Error updating goal",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <>
       <Card className="relative">
@@ -44,6 +72,11 @@ export function GoalCard({ goal, onGoalChange }: GoalCardProps) {
           <div className="space-y-1">
             <h3 className="font-semibold leading-none tracking-tight">
               {goal.name}
+              {goal.is_completed && (
+                <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  Completed
+                </span>
+              )}
             </h3>
             <p className="text-sm text-muted-foreground">{goal.description}</p>
           </div>
@@ -54,6 +87,10 @@ export function GoalCard({ goal, onGoalChange }: GoalCardProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={toggleComplete}>
+                <CheckCircle2 className="w-4 h-4 mr-2" />
+                {goal.is_completed ? "Mark as Active" : "Mark as Complete"}
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>
                 <Pencil className="w-4 h-4 mr-2" />
                 Edit Goal

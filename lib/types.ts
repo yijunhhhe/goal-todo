@@ -6,6 +6,7 @@ export interface Goal {
   due_date: string;
   created_at: string;
   progress: number;
+  is_completed: boolean;
 }
 
 export interface Todo {

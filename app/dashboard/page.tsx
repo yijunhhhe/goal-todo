@@ -39,6 +39,9 @@ export default function DashboardPage() {
     }
   }
 
+  const activeGoals = goals.filter(goal => !goal.is_completed);
+  const completedGoals = goals.filter(goal => goal.is_completed);
+
   return (
     <div className="container mx-auto px-4 py-8">
       <header className="flex justify-between items-center mb-8">
@@ -49,7 +52,27 @@ export default function DashboardPage() {
         </Button>
       </header>
 
-      <GoalGrid goals={goals} isLoading={isLoading} onGoalsChange={fetchGoals} />
+      <div className="space-y-12">
+        <section>
+          <h2 className="text-xl font-semibold mb-4">Active Goals</h2>
+          <GoalGrid 
+            goals={activeGoals} 
+            isLoading={isLoading} 
+            onGoalsChange={fetchGoals} 
+          />
+        </section>
+
+        {completedGoals.length > 0 && (
+          <section>
+            <h2 className="text-xl font-semibold mb-4">Completed Goals</h2>
+            <GoalGrid 
+              goals={completedGoals} 
+              isLoading={isLoading} 
+              onGoalsChange={fetchGoals} 
+            />
+          </section>
+        )}
+      </div>
 
       <CreateGoalDialog
         open={isCreateGoalOpen}
