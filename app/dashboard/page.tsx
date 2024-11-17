@@ -53,7 +53,7 @@ export default function DashboardPage() {
               if (goal) {
                 setSelectedGoal(goal);
                 if (currentTaskId) {
-                  const task = goal.todos?.find(todo => todo.id === currentTaskId && !todo.completed);
+                  const task = goal.todos?.find((todo: Todo) => todo.id === currentTaskId && !todo.completed);
                   if (task) {
                     setCurrentTask(task);
                   }
