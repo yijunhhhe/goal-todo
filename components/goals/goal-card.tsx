@@ -67,9 +67,7 @@ export function GoalCard({ goal, onGoalChange }: GoalCardProps) {
 
   const getTotalEstimatedTime = () => {
     if (!goal.todos?.length) return 0;
-    return goal.todos
-      .filter(todo => !todo.completed)
-      .reduce((total, todo) => total + (todo.estimated_time || 0), 0);
+    return goal.todos.reduce((total, todo) => total + (todo.estimated_time || 0), 0);
   };
 
   const formatTime = (minutes: number) => {
