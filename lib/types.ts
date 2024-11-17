@@ -12,13 +12,14 @@ export interface Goal {
 
 export interface Todo {
   id: string;
+  created_at: string;
   goal_id: string;
   name: string;
-  completed: boolean;
-  priority: "none" | "low" | "medium" | "high" | null;
+  priority: "low" | "medium" | "high" | null;
   due_date: string | null;
-  created_at: string;
-  estimated_time?: number | null;
+  estimated_time: number | null;
+  completed: boolean;
+  completed_time: string | null;
 }
 
 export interface CreateGoalInput {

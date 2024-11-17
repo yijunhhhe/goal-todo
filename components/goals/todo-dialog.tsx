@@ -182,7 +182,10 @@ export function TodoDialog({
     try {
       const { error } = await supabase
         .from("todos")
-        .update({ completed: !todo.completed })
+        .update({ 
+          completed: !todo.completed,
+          completed_time: todo.completed ? null : new Date().toISOString()
+        })
         .eq("id", todo.id);
 
       if (error) throw error;
