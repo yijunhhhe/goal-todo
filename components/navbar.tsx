@@ -1,42 +1,80 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/lib/supabase";
-import { LogOut, Settings } from "lucide-react";
+import {
+  Menubar,
+  MenubarContent,
+  MenubarItem,
+  MenubarMenu,
+  MenubarTrigger,
+} from "@/components/ui/menubar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { UserCircle, LogOut } from "lucide-react";
 
 export function Navbar() {
-  const router = useRouter();
+  const pathname = usePathname();
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push("/");
-    router.refresh();
+  const handleSignOut = () => {
+    // Add your sign out logic here
+    console.log("Signing out...");
   };
 
   return (
     <nav className="border-b">
-      <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Goal Tracker</h1>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <Settings className="h-5 w-5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={handleSignOut}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+      <div className="container mx-auto px-4 h-14 flex items-center justify-between">
+        <div className="flex items-center gap-6">
+          <Link href="/goals" className="font-semibold">
+            Logo
+          </Link>
+          
+          <Menubar className="border-none">
+            <MenubarMenu>
+              <MenubarTrigger className={pathname === "/dashboard" ? "bg-accent" : ""}>
+                <Link href="/dashboard">Dashboard</Link>
+              </MenubarTrigger>
+            </MenubarMenu>
+            
+            <MenubarMenu>
+              <MenubarTrigger className={pathname === "/goals" ? "bg-accent" : ""}>
+                <Link href="/goals">Goals</Link>
+              </MenubarTrigger>
+            </MenubarMenu>
+          </Menubar>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <UserCircle className="h-4 w-4" />
+                Profile
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem>
+                <Link href="/profile" className="flex items-center w-full">
+                  Profile Settings
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                className="text-red-600 focus:text-red-600 cursor-pointer"
+                onClick={handleSignOut}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </nav>
   );
