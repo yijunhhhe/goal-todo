@@ -16,6 +16,7 @@ export interface Todo {
   priority: "none" | "low" | "medium" | "high" | null;
   due_date: string | null;
   created_at: string;
+  estimated_time?: number | null;
 }
 
 export interface CreateGoalInput {
@@ -26,6 +27,7 @@ export interface CreateGoalInput {
 
 export interface CreateTodoInput {
   name: string;
-  priority?: "none" | "low" | "medium" | "high";
-  due_date?: Date | null;
+  priority?: "low" | "medium" | "high";
+  due_date: Date | null;
+  estimated_time?: number | null;
 }

@@ -41,7 +41,8 @@ import {
   Plus, 
   Trash, 
   Calendar as CalendarIcon2,
-  ArrowUpDown
+  ArrowUpDown,
+  Clock
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -55,11 +56,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Switch } from "@/components/ui/switch";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
   priority: z.enum(["low", "medium", "high"]).optional(),
   due_date: z.date().nullable(),
+  estimated_time: z.number().min(0).nullable().optional(),
 });
 
 type SortOption = "priority" | "due_date" | "none";
@@ -81,6 +85,7 @@ export function TodoDialog({
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>("none");
+  const [showCompleted, setShowCompleted] = useState(true);
   const { toast } = useToast();
 
   const form = useForm<CreateTodoInput>({
@@ -89,6 +94,7 @@ export function TodoDialog({
       name: "",
       priority: undefined,
       due_date: null,
+      estimated_time: null,
     },
   });
 
@@ -99,21 +105,24 @@ export function TodoDialog({
   }, [open, goalId]);
 
   const sortTodos = (todos: Todo[]) => {
-    const sortedTodos = [...todos];
+    let filteredTodos = showCompleted 
+      ? [...todos]
+      : todos.filter(todo => !todo.completed);
+
     switch (sortBy) {
       case "priority":
         const priorityOrder = { high: 0, medium: 1, low: 2, none: 3 };
-        return sortedTodos.sort((a, b) => 
+        return filteredTodos.sort((a, b) => 
           (priorityOrder[a.priority || "none"] || 3) - (priorityOrder[b.priority || "none"] || 3)
         );
       case "due_date":
-        return sortedTodos.sort((a, b) => {
+        return filteredTodos.sort((a, b) => {
           if (!a.due_date) return 1;
           if (!b.due_date) return -1;
           return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
         });
       default:
-        return sortedTodos;
+        return filteredTodos;
     }
   };
 
@@ -147,6 +156,7 @@ export function TodoDialog({
           name: values.name,
           priority: values.priority || null,
           due_date: values.due_date?.toISOString() || null,
+          estimated_time: values.estimated_time || null,
         },
       ]);
 
@@ -220,7 +230,7 @@ export function TodoDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>Manage Tasks</DialogTitle>
           <DialogDescription>
@@ -228,7 +238,7 @@ export function TodoDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="flex flex-col flex-1 overflow-hidden">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <div className="grid gap-4">
@@ -246,7 +256,7 @@ export function TodoDialog({
                   )}
                 />
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <FormField
                     control={form.control}
                     name="priority"
@@ -312,6 +322,30 @@ export function TodoDialog({
                       </FormItem>
                     )}
                   />
+
+                  <FormField
+                    control={form.control}
+                    name="estimated_time"
+                    render={({ field: { value, onChange, ...field } }) => (
+                      <FormItem>
+                        <FormLabel>Est. Time (mins)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="Time in mins"
+                            value={value || ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              onChange(val ? parseInt(val, 10) : null);
+                            }}
+                            min={0}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
               </div>
 
@@ -326,91 +360,116 @@ export function TodoDialog({
             </form>
           </Form>
 
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
+          <div className="flex flex-col mt-4 min-h-0">
+            <div className="flex justify-between items-center mb-2">
               <h3 className="text-sm font-medium">Tasks</h3>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <ArrowUpDown className="h-4 w-4 mr-2" />
-                    Sort by
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setSortBy("none")}>
-                    Default
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSortBy("priority")}>
-                    Priority
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSortBy("due_date")}>
-                    Due Date
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={showCompleted}
+                    onCheckedChange={setShowCompleted}
+                    id="show-completed"
+                  />
+                  <label
+                    htmlFor="show-completed"
+                    className="text-sm text-muted-foreground"
+                  >
+                    Show completed
+                  </label>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <ArrowUpDown className="h-4 w-4 mr-2" />
+                      Sort by
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setSortBy("none")}>
+                      Default
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setSortBy("priority")}>
+                      Priority
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setSortBy("due_date")}>
+                      Due Date
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
 
-            {isLoading ? (
-              <div className="flex items-center justify-center py-4">
-                <Loader2 className="w-6 h-6 animate-spin" />
-              </div>
-            ) : todos.length === 0 ? (
-              <p className="text-center text-sm text-muted-foreground py-4">
-                No tasks yet. Add your first task above.
-              </p>
-            ) : (
-              sortTodos(todos).map((todo) => (
-                <div
-                  key={todo.id}
-                  className={cn(
-                    "group flex items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/50",
-                    todo.completed && "bg-muted/50"
-                  )}
-                >
-                  <Checkbox
-                    checked={todo.completed}
-                    onCheckedChange={() => toggleTodo(todo)}
-                  />
-                  <div className="flex flex-1 flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={cn(
-                          "text-sm font-medium",
-                          todo.completed && "line-through text-muted-foreground"
-                        )}
-                      >
-                        {todo.name}
-                      </span>
-                      {todo.priority && (
-                        <Badge
-                          variant="secondary"
-                          className={cn(
-                            "text-xs capitalize",
-                            getPriorityColor(todo.priority)
-                          )}
-                        >
-                          {todo.priority}
-                        </Badge>
-                      )}
-                    </div>
-                    {todo.due_date && (
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <CalendarIcon2 className="h-3 w-3" />
-                        <span>Due {format(new Date(todo.due_date), "PPP")}</span>
-                      </div>
-                    )}
+            <ScrollArea className="h-[300px] rounded-md border">
+              <div className="p-4 space-y-2">
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="w-6 h-6 animate-spin" />
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => deleteTodo(todo)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <Trash className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                  </Button>
-                </div>
-              ))
-            )}
+                ) : todos.length === 0 ? (
+                  <p className="text-center text-sm text-muted-foreground py-4">
+                    No tasks yet. Add your first task above.
+                  </p>
+                ) : (
+                  sortTodos(todos).map((todo) => (
+                    <div
+                      key={todo.id}
+                      className={cn(
+                        "group flex items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/50",
+                        todo.completed && "bg-muted/50"
+                      )}
+                    >
+                      <Checkbox
+                        checked={todo.completed}
+                        onCheckedChange={() => toggleTodo(todo)}
+                      />
+                      <div className="flex flex-1 flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={cn(
+                              "text-sm font-medium",
+                              todo.completed && "line-through text-muted-foreground"
+                            )}
+                          >
+                            {todo.name}
+                          </span>
+                          {todo.priority && (
+                            <Badge
+                              variant="secondary"
+                              className={cn(
+                                "text-xs capitalize",
+                                getPriorityColor(todo.priority)
+                              )}
+                            >
+                              {todo.priority}
+                            </Badge>
+                          )}
+                        </div>
+                        {todo.due_date && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <CalendarIcon2 className="h-3 w-3" />
+                            <span>Due {format(new Date(todo.due_date), "PPP")}</span>
+                          </div>
+                        )}
+                        {todo.estimated_time && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Clock className="h-3 w-3" />
+                            <span>{todo.estimated_time} mins</span>
+                          </div>
+                        )}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => deleteTodo(todo)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Trash className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                      </Button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </ScrollArea>
           </div>
         </div>
       </DialogContent>
