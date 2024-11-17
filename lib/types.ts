@@ -7,6 +7,7 @@ export interface Goal {
   created_at: string;
   progress: number;
   is_completed: boolean;
+  todos: Todo[]; 
 }
 
 export interface Todo {
