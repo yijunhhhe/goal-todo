@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { format } from "date-fns";
-import { Goal } from "@/lib/types";
+import { Goal, Todo } from "@/lib/types";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { TodoDialog } from "./todo-dialog";
@@ -21,7 +21,7 @@ import { DeleteGoalDialog } from "./delete-goal-dialog";
 import { supabase } from "@/lib/supabase";
 
 interface GoalCardProps {
-  goal: Goal;
+  goal: Goal & { todos: Todo[] };
   onGoalChange: () => void;
 }
 
@@ -63,6 +63,20 @@ export function GoalCard({ goal, onGoalChange }: GoalCardProps) {
         variant: "destructive",
       });
     }
+  };
+
+  const getTotalEstimatedTime = () => {
+    if (!goal.todos?.length) return 0;
+    return goal.todos.reduce((total, todo) => total + (todo.estimated_time || 0), 0);
+  };
+
+  const formatTime = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    
+    if (hours === 0) return `${remainingMinutes}m`;
+    if (remainingMinutes === 0) return `${hours}h`;
+    return `${hours}h ${remainingMinutes}m`;
   };
 
   return (
@@ -129,6 +143,12 @@ export function GoalCard({ goal, onGoalChange }: GoalCardProps) {
                 {isOverdue
                   ? `${Math.abs(daysRemaining)} days overdue`
                   : `${daysRemaining} days remaining`}
+              </span>
+            </div>
+            <div className="flex items-center space-x-4">
+              <Clock className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">
+                Estimated: {formatTime(getTotalEstimatedTime())}
               </span>
             </div>
           </div>
