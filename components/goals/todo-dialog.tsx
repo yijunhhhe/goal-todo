@@ -233,7 +233,7 @@ export function TodoDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col overflow-hidden">
+      <DialogContent className="sm:max-w-[600px] h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>Manage Tasks</DialogTitle>
           <DialogDescription>
@@ -363,7 +363,7 @@ export function TodoDialog({
             </form>
           </Form>
 
-          <div className="flex flex-col mt-4 min-h-0">
+          <div className="mt-4 flex flex-col min-h-0 flex-1">
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-sm font-medium">Tasks</h3>
               <div className="flex items-center gap-4">
@@ -402,7 +402,7 @@ export function TodoDialog({
               </div>
             </div>
 
-            <ScrollArea className="h-[300px] rounded-md border">
+            <ScrollArea className="min-h-0 flex-1 border rounded-md">
               <div className="p-4 space-y-2">
                 {isLoading ? (
                   <div className="flex items-center justify-center py-4">
