@@ -77,7 +77,7 @@ export default function GoalsPage() {
         .select(`
           *,
           todos (*),
-          categories (*)
+          category:categories (*)
         `)
         .order("created_at", { ascending: false });
 
