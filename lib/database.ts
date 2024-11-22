@@ -1,5 +1,27 @@
+import { Goal, Todo, Category, CreateCategoryInput } from './types';
 import { supabase } from './supabase';
-import { Goal, Todo } from './types';
+
+// Categories API
+export async function getCategories() {
+  const { data, error } = await supabase
+    .from('categories')
+    .select('*')
+    .order('name', { ascending: true });
+
+  if (error) throw error;
+  return data;
+}
+
+export async function createCategory(category: CreateCategoryInput) {
+  const { data, error } = await supabase
+    .from('categories')
+    .insert([category])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
 
 // Goals API
 export async function getGoals() {
@@ -7,7 +29,8 @@ export async function getGoals() {
     .from('goals')
     .select(`
       *,
-      todos (*)
+      todos (*),
+      categories (*)
     `)
     .order('created_at', { ascending: false });
 

@@ -8,9 +8,10 @@ interface GoalGridProps {
   goals: Goal[];
   isLoading: boolean;
   onGoalsChange: () => void;
+  onCategoriesChange: () => void;
 }
 
-export function GoalGrid({ goals, isLoading, onGoalsChange }: GoalGridProps) {
+export function GoalGrid({ goals, isLoading, onGoalsChange, onCategoriesChange }: GoalGridProps) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -37,7 +38,12 @@ export function GoalGrid({ goals, isLoading, onGoalsChange }: GoalGridProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {goals.map((goal) => (
-        <GoalCard key={goal.id} goal={goal} onGoalChange={onGoalsChange} />
+        <GoalCard
+          key={goal.id}
+          goal={goal}
+          onGoalChange={onGoalsChange}
+          onCategoriesChange={onCategoriesChange}
+        />
       ))}
     </div>
   );

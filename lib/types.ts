@@ -1,13 +1,22 @@
+export interface Category {
+  id: string;
+  user_id: string;
+  name: string;
+  created_at: string;
+}
+
 export interface Goal {
   id: string;
   user_id: string;
+  category_id: string | null;
   name: string;
   description: string;
   due_date: string;
   created_at: string;
   progress: number;
   is_completed: boolean;
-  todos: Todo[]; 
+  todos: Todo[];
+  categories?: Category; 
 }
 
 export interface Todo {
@@ -26,6 +35,7 @@ export interface CreateGoalInput {
   name: string;
   description: string;
   due_date: Date;
+  category_id?: string;
 }
 
 export interface CreateTodoInput {
@@ -33,4 +43,8 @@ export interface CreateTodoInput {
   priority?: "low" | "medium" | "high";
   due_date: Date | null;
   estimated_time?: number | null;
+}
+
+export interface CreateCategoryInput {
+  name: string;
 }

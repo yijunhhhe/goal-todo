@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -9,9 +9,9 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -29,17 +29,26 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import { CalendarIcon, Check, ChevronsUpDown, Loader2, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { Goal } from "@/lib/types";
+import { Goal, Category } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/ui/use-toast";
+import { createCategory, getCategories } from "@/lib/database";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().min(1, "Description is required"),
   due_date: z.date(),
+  category_id: z.string().optional(),
 });
 
 interface EditGoalDialogProps {
@@ -47,6 +56,7 @@ interface EditGoalDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  onCategoriesChange: () => void;
 }
 
 export function EditGoalDialog({
@@ -54,8 +64,12 @@ export function EditGoalDialog({
   open,
   onOpenChange,
   onSuccess,
+  onCategoriesChange,
 }: EditGoalDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -64,8 +78,49 @@ export function EditGoalDialog({
       name: goal.name,
       description: goal.description,
       due_date: new Date(goal.due_date),
+      category_id: goal.category_id || undefined,
     },
   });
+
+  useEffect(() => {
+    if (open) {
+      fetchCategories();
+    }
+  }, [open]);
+
+  const fetchCategories = async () => {
+    setIsLoadingCategories(true);
+    try {
+      const data = await getCategories();
+      setCategories(data || []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    } finally {
+      setIsLoadingCategories(false);
+    }
+  };
+
+  const handleCreateCategory = async (categoryName: string) => {
+    if (!categoryName.trim()) return;
+
+    try {
+      const category = await createCategory({ name: categoryName.trim() });
+      setCategories(prev => [...prev, category]);
+      form.setValue('category_id', category.id);
+      setSearchValue("");
+      onCategoriesChange();
+      toast({
+        title: "Category created",
+        description: `Category "${categoryName}" has been created.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error creating category",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
@@ -76,6 +131,7 @@ export function EditGoalDialog({
           name: values.name,
           description: values.description,
           due_date: values.due_date.toISOString(),
+          category_id: values.category_id,
         })
         .eq("id", goal.id);
 
@@ -144,6 +200,78 @@ export function EditGoalDialog({
 
             <FormField
               control={form.control}
+              name="category_id"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>Category (Optional)</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          className={cn(
+                            "w-full justify-between",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value
+                            ? categories.find((category) => category.id === field.value)?.name
+                            : "Select category"}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[300px] p-0">
+                      <Command>
+                        <CommandInput 
+                          placeholder="Search or create category..." 
+                          value={searchValue}
+                          onValueChange={setSearchValue}
+                        />
+                        <CommandEmpty>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className="w-full justify-start"
+                            onClick={() => handleCreateCategory(searchValue)}
+                          >
+                            <Plus className="mr-2 h-4 w-4" />
+                            Create category "{searchValue}"
+                          </Button>
+                        </CommandEmpty>
+                        <CommandGroup>
+                          {categories.map((category) => (
+                            <CommandItem
+                              value={category.name}
+                              key={category.id}
+                              onSelect={() => {
+                                form.setValue("category_id", category.id);
+                                setSearchValue("");
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  category.id === field.value
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                              {category.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="due_date"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
@@ -172,6 +300,9 @@ export function EditGoalDialog({
                         mode="single"
                         selected={field.value}
                         onSelect={field.onChange}
+                        disabled={(date) =>
+                          date < new Date() || date < new Date("1900-01-01")
+                        }
                         initialFocus
                       />
                     </PopoverContent>

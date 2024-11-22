@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { format } from "date-fns";
-import { Goal, Todo } from "@/lib/types";
+import { Goal, Todo, Category } from "@/lib/types";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { TodoDialog } from "./todo-dialog";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Calendar, CheckCircle2, Clock, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Calendar, CheckCircle2, Clock, MoreVertical, Pencil, Tag, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,13 +19,15 @@ import { cn } from "@/lib/utils";
 import { EditGoalDialog } from "./edit-goal-dialog";
 import { DeleteGoalDialog } from "./delete-goal-dialog";
 import { supabase } from "@/lib/supabase";
+import { Badge } from "@/components/ui/badge";
 
 interface GoalCardProps {
-  goal: Goal & { todos: Todo[] };
+  goal: Goal & { todos: Todo[]; category?: Category };
   onGoalChange: () => void;
+  onCategoriesChange: () => void;
 }
 
-export function GoalCard({ goal, onGoalChange }: GoalCardProps) {
+export function GoalCard({ goal, onGoalChange, onCategoriesChange }: GoalCardProps) {
   const [isTodoDialogOpen, setIsTodoDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -95,6 +97,12 @@ export function GoalCard({ goal, onGoalChange }: GoalCardProps) {
               )}
             </h3>
             <p className="text-sm text-muted-foreground">{goal.description}</p>
+            {goal.category && (
+              <Badge variant="secondary" className="mt-2 gap-1">
+                <Tag className="h-3 w-3" />
+                {goal.category.name}
+              </Badge>
+            )}
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -188,6 +196,7 @@ export function GoalCard({ goal, onGoalChange }: GoalCardProps) {
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
         onSuccess={onGoalChange}
+        onCategoriesChange={onCategoriesChange}
       />
 
       <DeleteGoalDialog
