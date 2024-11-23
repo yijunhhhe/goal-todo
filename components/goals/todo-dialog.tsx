@@ -135,7 +135,7 @@ export function TodoDialog({
         .order("created_at", { ascending: true });
 
       if (error) throw error;
-      setTodos(data);
+      setTodos(data || []);
     } catch (error) {
       toast({
         title: "Error fetching todos",
@@ -150,23 +150,44 @@ export function TodoDialog({
   async function onSubmit(values: CreateTodoInput) {
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.from("todos").insert([
-        {
-          goal_id: goalId,
-          name: values.name,
-          priority: values.priority || null,
-          due_date: values.due_date?.toISOString() || null,
-          estimated_time: values.estimated_time || null,
-        },
-      ]);
+      const newTodo = {
+        goal_id: goalId,
+        name: values.name,
+        priority: values.priority || null,
+        due_date: values.due_date?.toISOString() || null,
+        estimated_time: values.estimated_time || null,
+      };
+
+      const { data, error } = await supabase
+        .from("todos")
+        .insert([newTodo])
+        .select()
+        .single();
 
       if (error) throw error;
 
+      // Update local todos state
+      const updatedTodos = [...todos, data];
+      setTodos(updatedTodos);
+
+      // Calculate new progress
+      const totalTodos = updatedTodos.length;
+      const completedTodos = updatedTodos.filter(t => t.completed).length;
+      const newProgress = Math.round((completedTodos / totalTodos) * 100);
+
+      // Update goal progress
+      const { error: goalError } = await supabase
+        .from("goals")
+        .update({ progress: newProgress })
+        .eq("id", goalId);
+
+      if (goalError) throw goalError;
+
+      // Update parent goal state
+      onTodosChange();
+
       form.reset();
       form.setValue('priority', undefined);
-      
-      await fetchTodos();
-      onTodosChange();
     } catch (error) {
       toast({
         title: "Error creating todo",
@@ -179,8 +200,24 @@ export function TodoDialog({
   }
 
   async function toggleTodo(todo: Todo) {
+    // Optimistic update for todos
+    setTodos(prev => prev.map(t => 
+      t.id === todo.id 
+        ? { ...t, completed: !t.completed, completed_time: !t.completed ? new Date().toISOString() : null }
+        : t
+    ));
+
     try {
-      const { error } = await supabase
+      // Calculate new progress
+      const updatedTodos = todos.map(t => 
+        t.id === todo.id ? { ...t, completed: !t.completed } : t
+      );
+      const totalTodos = updatedTodos.length;
+      const completedTodos = updatedTodos.filter(t => t.completed).length;
+      const newProgress = Math.round((completedTodos / totalTodos) * 100);
+
+      // Update todo
+      const { error: todoError } = await supabase
         .from("todos")
         .update({ 
           completed: !todo.completed,
@@ -188,11 +225,23 @@ export function TodoDialog({
         })
         .eq("id", todo.id);
 
-      if (error) throw error;
+      if (todoError) throw todoError;
 
-      await fetchTodos();
+      // Update goal progress
+      const { error: goalError } = await supabase
+        .from("goals")
+        .update({ progress: newProgress })
+        .eq("id", goalId);
+
+      if (goalError) throw goalError;
+
+      // Update parent goal state
       onTodosChange();
     } catch (error) {
+      // Revert optimistic update
+      setTodos(prev => prev.map(t => 
+        t.id === todo.id ? todo : t
+      ));
       toast({
         title: "Error updating todo",
         description: error instanceof Error ? error.message : "An unexpected error occurred",
@@ -202,14 +251,36 @@ export function TodoDialog({
   }
 
   async function deleteTodo(todo: Todo) {
+    // Optimistic update
+    setTodos(prev => prev.filter(t => t.id !== todo.id));
+
     try {
-      const { error } = await supabase.from("todos").delete().eq("id", todo.id);
+      const { error } = await supabase
+        .from("todos")
+        .delete()
+        .eq("id", todo.id);
 
       if (error) throw error;
 
-      await fetchTodos();
+      // Calculate new progress after deletion
+      const updatedTodos = todos.filter(t => t.id !== todo.id);
+      const totalTodos = updatedTodos.length;
+      const completedTodos = updatedTodos.filter(t => t.completed).length;
+      const newProgress = totalTodos === 0 ? 0 : Math.round((completedTodos / totalTodos) * 100);
+
+      // Update goal progress
+      const { error: goalError } = await supabase
+        .from("goals")
+        .update({ progress: newProgress })
+        .eq("id", goalId);
+
+      if (goalError) throw goalError;
+
+      // Update parent goal state
       onTodosChange();
     } catch (error) {
+      // Revert optimistic update
+      setTodos(prev => [...prev, todo]);
       toast({
         title: "Error deleting todo",
         description: error instanceof Error ? error.message : "An unexpected error occurred",

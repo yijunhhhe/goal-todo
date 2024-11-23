@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Goal, Todo, Category } from "@/lib/types";
 import { Progress } from "@/components/ui/progress";
@@ -27,11 +27,45 @@ interface GoalCardProps {
   onCategoriesChange: () => void;
 }
 
-export function GoalCard({ goal, onGoalChange, onCategoriesChange }: GoalCardProps) {
+export function GoalCard({ goal: initialGoal, onGoalChange, onCategoriesChange }: GoalCardProps) {
+  const [goal, setGoal] = useState(initialGoal);
   const [isTodoDialogOpen, setIsTodoDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    setGoal(initialGoal);
+  }, [initialGoal]);
+
+  const handleTodoChange = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("goals")
+        .select(`
+          *,
+          todos (*),
+          category:categories (*)
+        `)
+        .eq('id', goal.id)
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setGoal(data);
+      }
+    } catch (error) {
+      console.error('Error updating goal state:', error);
+    }
+  };
+
+  const handleTodoDialogClose = (open: boolean) => {
+    setIsTodoDialogOpen(open);
+    if (!open) {
+      // Only refresh when dialog closes
+      onGoalChange();
+    }
+  };
 
   const daysRemaining = Math.ceil(
     (new Date(goal.due_date).getTime() - new Date().getTime()) /
@@ -187,8 +221,8 @@ export function GoalCard({ goal, onGoalChange, onCategoriesChange }: GoalCardPro
       <TodoDialog
         goalId={goal.id}
         open={isTodoDialogOpen}
-        onOpenChange={setIsTodoDialogOpen}
-        onTodosChange={onGoalChange}
+        onOpenChange={handleTodoDialogClose}
+        onTodosChange={handleTodoChange}
       />
 
       <EditGoalDialog
