@@ -83,7 +83,7 @@ export default function NewGoalPage() {
   const groupGoalsByCategory = (goals: Goal[]) => {
     const filtered = goals.filter(goal => showCompleted || !goal.is_completed);
     return filtered.reduce((acc: GroupedGoals, goal) => {
-      const categoryName = goal.category?.name || "Uncategorized";
+      const categoryName = goal.categories?.name || "Uncategorized";
       if (!acc[categoryName]) {
         acc[categoryName] = [];
       }
@@ -311,10 +311,10 @@ export default function NewGoalPage() {
                         <Calendar className="h-4 w-4" />
                         <span>Due {format(new Date(selectedGoal.due_date), "PP")}</span>
                       </div>
-                      {selectedGoal.category && (
+                      {selectedGoal.categories && (
                         <Badge variant="secondary" className="flex items-center gap-1">
                           <Tag className="h-3 w-3" />
-                          {selectedGoal.category.name}
+                          {selectedGoal.categories.name}
                         </Badge>
                       )}
                     </div>

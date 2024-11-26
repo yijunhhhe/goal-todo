@@ -121,8 +121,8 @@ export function CreateTodo({ onSubmit, onCancel }: CreateTodoProps) {
             <PopoverContent className="w-auto p-0" align="start">
               <Calendar
                 mode="single"
-                selected={dueDate}
-                onSelect={setDueDate}
+                selected={dueDate || undefined}
+                onSelect={(date: Date | undefined) => setDueDate(date || null)}
                 initialFocus
               />
             </PopoverContent>

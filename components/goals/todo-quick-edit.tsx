@@ -46,7 +46,7 @@ export function TodoQuickEdit({ todo, onDelete, onUpdate }: TodoQuickEditProps) 
   const [name, setName] = useState(todo.name);
   const { toast } = useToast();
 
-  const getPriorityColor = (priority: Todo["priority"]) => {
+  const getPriorityColor = (priority: Todo["priority"] | "none") => {
     switch (priority) {
       case "high":
         return "text-red-500";
