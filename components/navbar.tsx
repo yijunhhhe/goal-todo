@@ -49,6 +49,12 @@ export function Navbar() {
             </MenubarMenu>
 
             <MenubarMenu>
+              <MenubarTrigger className={pathname === "/newgoal" ? "bg-accent" : ""}>
+                <Link href="/newgoal">New Goals</Link>
+              </MenubarTrigger>
+            </MenubarMenu>
+
+            <MenubarMenu>
               <MenubarTrigger className={pathname === "/timeline" ? "bg-accent" : ""}>
                 <Link href="/timeline">Timeline</Link>
               </MenubarTrigger>
